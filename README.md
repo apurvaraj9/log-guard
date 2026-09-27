@@ -1,5 +1,7 @@
 # 🛡️ Log Guard
 
+[![Tests](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml/badge.svg)](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml)
+
 **A local, offline tool that scans server log files and masks sensitive data before you share them for debugging.**
 
 No uploads. No third-party servers. No enterprise pricing. Your logs never leave your machine.
@@ -24,7 +26,7 @@ When you're debugging with a teammate, posting to a forum, or filing a support t
 - 🚦 **CI / pre-commit mode** (`--check`) — scans without writing files and exits with status code `1` if secrets are found, so it can block a commit or fail a build. Ships with a ready-to-use `.pre-commit-hooks.yaml`
 - 📄 **Non-destructive** — writes a new `*.masked.log` file (or a path you choose with `-o`); your original is never touched, and a clean file with nothing to mask doesn't get a redundant copy
 - 📊 **Summary report** — see exactly how many of each type were found
-- 🧪 **Fully tested** — 50+ automated tests covering detection, masking, directory scanning, config parsing, and a wide range of edge cases
+- 🧪 **Fully tested** — 50+ automated tests covering detection, masking, directory scanning, config parsing, and a wide range of edge cases, run automatically on every push via GitHub Actions across Python 3.9–3.12
 - 💻 **Handles edge cases** — empty files, huge files (streamed line-by-line), unusual encodings, mixed line endings, and directories with zero matching files
 - 🚫 **Smart defaults for directories** — automatically skips `.git`, `node_modules`, `venv`, `.venv`, and `__pycache__` while recursing (use `--ext all` to scan every file if you really want to)
 - ⚡ **Zero network calls, ever**
@@ -139,14 +141,15 @@ pytest
 
 ```
 log-guard/
-├── log_guard.py              # Core tool: detection, masking, CLI, config, directory scanning
-├── test_log_guard.py         # Automated test suite (pytest)
-├── pyproject.toml            # Packaging config (enables the `log-guard` command)
-├── .pre-commit-hooks.yaml    # Lets others use Log Guard as a pre-commit hook
-├── .log-guard.json.example   # Example project config file
-├── sample.log                # Example log file for testing
-├── generate_samples.py       # Generates edge-case sample files for manual testing
-├── generate_test_logs_dir.py # Generates a sample directory tree for directory-scanning tests
+├── .github/workflows/tests.yml # GitHub Actions: runs the test suite on every push
+├── log_guard.py               # Core tool: detection, masking, CLI, config, directory scanning
+├── test_log_guard.py          # Automated test suite (pytest)
+├── pyproject.toml             # Packaging config (enables the `log-guard` command)
+├── .pre-commit-hooks.yaml     # Lets others use Log Guard as a pre-commit hook
+├── .log-guard.json.example    # Example project config file
+├── sample.log                 # Example log file for testing
+├── generate_samples.py        # Generates edge-case sample files for manual testing
+├── generate_test_logs_dir.py  # Generates a sample directory tree for directory-scanning tests
 └── README.md
 ```
 
@@ -160,7 +163,6 @@ log-guard/
 ## Roadmap
 
 - [ ] `.xlsx`/`.xls` support (via `openpyxl`)
-- [ ] GitHub Actions CI
 - [ ] PyPI packaging (`pip install log-guard`)
 
 ## License
