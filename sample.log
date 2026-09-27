@@ -1,0 +1,5 @@
+2024-01-15 10:22:31 INFO User login successful for john.doe@example.com
+2024-01-15 10:23:02 DEBUG API request with key sk_live_51Hz8f92jak3ndlka9d
+2024-01-15 10:24:15 WARNING Failed login attempt, contact support at 555-123-4567
+2024-01-15 10:25:00 INFO Order processed for customer jane.smith@company.org
+2024-01-15 10:26:45 ERROR Payment gateway timeout, admin phone: (415) 555-0192

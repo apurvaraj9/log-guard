@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "log-guard"
+version = "0.1.0"
+description = "A local tool to scan and mask sensitive data in log files."
+requires-python = ">=3.8"
+
+[project.scripts]
+log-guard = "log_guard:main"
+
+[tool.setuptools]
+py-modules = ["log_guard"]

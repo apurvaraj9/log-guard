@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Log Guard's own generated test artifacts
+# (regenerate anytime with generate_samples.py / generate_test_logs_dir.py)
+edge_case_samples/
+test_logs/
+*.masked.*
+
+# Personal local config — commit .log-guard.json.example instead
+.log-guard.json
+
+# Editor
+.vscode/

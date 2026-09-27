@@ -1,0 +1,5 @@
+{
+  "extensions": ["log", "txt"],
+  "recursive": false,
+  "quiet": false
+}
