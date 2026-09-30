@@ -1,12 +1,51 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "log-guard"
+name = "logguard-cli"
 version = "0.1.0"
-description = "A local tool to scan and mask sensitive data in log files."
-requires-python = ">=3.8"
+description = "A 100% local, offline CLI tool that scans log files and masks sensitive data (emails, phone numbers, API keys, IPs, credit cards) before you share them."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "apurvaraj9" }
+]
+keywords = [
+    "logs",
+    "logging",
+    "masking",
+    "redaction",
+    "privacy",
+    "security",
+    "pii",
+    "sensitive-data",
+    "cli",
+    "pre-commit",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Logging",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/apurvaraj9/log-guard"
+Repository = "https://github.com/apurvaraj9/log-guard"
+Issues = "https://github.com/apurvaraj9/log-guard/issues"
 
 [project.scripts]
 log-guard = "log_guard:main"
