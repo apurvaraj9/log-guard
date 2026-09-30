@@ -34,14 +34,24 @@ When you're debugging with a teammate, posting to a forum, or filing a support t
 ## Installation
 
 ```bash
+pip install logguard-cli
+```
+
+That's it — this installs the `log-guard` command. (The package is named `logguard-cli` on PyPI because the name `log-guard` was already taken, but the command you run is still `log-guard`.)
+
+Requires Python 3.9 or newer.
+
+> **Note:** if `log-guard` isn't recognized as a command right after installing, your Python Scripts folder probably isn't on your system PATH. Either add it to PATH, or run the tool with `python -m log_guard` instead — both work identically.
+
+### Installing from source (for development)
+
+```bash
 git clone https://github.com/apurvaraj9/log-guard.git
 cd log-guard
 pip install -e .
 ```
 
-This installs Log Guard as an editable package and makes the `log-guard` command available in your terminal.
-
-> **Note:** if `log-guard` isn't recognized as a command right after installing, your Python Scripts folder probably isn't on your system PATH. Either add it to PATH, or run the tool with `python -m log_guard` instead — both work identically.
+This installs Log Guard as an editable package, so any changes you make to the code take effect immediately.
 
 ## Usage
 
@@ -132,6 +142,8 @@ An example is included as `.log-guard.json.example` — copy it to `.log-guard.j
 
 ## Running the tests
 
+From a source checkout (see "Installing from source" above):
+
 ```bash
 pip install pytest
 pytest
@@ -144,7 +156,7 @@ log-guard/
 ├── .github/workflows/tests.yml # GitHub Actions: runs the test suite on every push
 ├── log_guard.py               # Core tool: detection, masking, CLI, config, directory scanning
 ├── test_log_guard.py          # Automated test suite (pytest)
-├── pyproject.toml             # Packaging config (enables the `log-guard` command)
+├── pyproject.toml             # Packaging config (PyPI metadata + the `log-guard` command)
 ├── .pre-commit-hooks.yaml     # Lets others use Log Guard as a pre-commit hook
 ├── .log-guard.json.example    # Example project config file
 ├── sample.log                 # Example log file for testing
@@ -163,11 +175,11 @@ log-guard/
 ## Roadmap
 
 - [ ] `.xlsx`/`.xls` support (via `openpyxl`)
-- [ ] PyPI packaging (`pip install log-guard`)
+- [x] PyPI packaging (`pip install logguard-cli`)
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/apurvaraj9/log-guard/blob/main/LICENSE).
 
 ## Author
 
