@@ -1,6 +1,6 @@
 # 🛡️ Log Guard
 
-[![Tests](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml/badge.svg)](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml)
+[![Tests](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml/badge.svg)](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml) [![PyPI version](https://img.shields.io/pypi/v/logguard-cli)](https://pypi.org/project/logguard-cli/)
 
 **A local, offline tool that scans server log files and masks sensitive data before you share them for debugging.**
 
