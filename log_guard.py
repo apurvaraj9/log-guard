@@ -3,6 +3,7 @@ import argparse
 import os
 import json
 import sys
+import warnings
 
 import openpyxl
 
@@ -67,6 +68,15 @@ DISPLAY_NAMES = {
 # archive under the hood and needs a dedicated reader — not supported
 # yet).
 DEFAULT_EXTENSIONS = ["log", "txt", "csv", "json", "out", "err"]
+
+# Spreadsheet formats that are read cell-by-cell with openpyxl instead
+# of line-by-line as plain text.
+SPREADSHEET_EXTENSIONS = {"xlsx"}
+
+# The old pre-2007 Excel format: a completely different binary format
+# that openpyxl can't read, so we give a clear error instead of
+# pretending to scan it.
+UNSUPPORTED_SPREADSHEET_EXTENSIONS = {"xls"}
 
 # Directories that are never worth recursing into automatically —
 # their contents are tooling/dependency internals, not application
@@ -196,7 +206,13 @@ def mask_workbook(filepath, patterns):
     The masked workbook is returned in memory; use write_workbook() to
     save it.
     """
-    workbook = openpyxl.load_workbook(filepath)
+    # openpyxl prints harmless technical warnings for many real-world
+    # files (e.g. "Data Validation extension is not supported"). They
+    # don't affect scanning, so we hide them to keep output clean.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        workbook = openpyxl.load_workbook(filepath)
+
     total_counts = {label: 0 for label in patterns}
     cell_count = 0
 
@@ -225,6 +241,14 @@ def write_workbook(filepath, workbook):
     Saves an openpyxl workbook to a new .xlsx file.
     """
     workbook.save(filepath)
+
+
+def _file_extension(filepath):
+    """
+    Returns the file's extension, lowercased, without the dot.
+    "Report.XLSX" -> "xlsx", "server.log" -> "log", "README" -> "".
+    """
+    return os.path.splitext(filepath)[1].lower().lstrip(".")
 
 
 def build_output_filepath(input_filepath):
@@ -353,17 +377,82 @@ def load_config(config_path):
     return data
 
 
+def _process_spreadsheet(filepath, patterns, check_mode, output_override, result):
+    """
+    The spreadsheet half of process_file(): scans an .xlsx file cell by
+    cell and (unless in check mode) writes a masked .xlsx copy. Fills in
+    and returns the same `result` dict that process_file() uses, so the
+    rest of the program can treat spreadsheets and text files the same.
+    """
+    result["kind"] = "spreadsheet"
+
+    try:
+        workbook, total_counts, cell_count, sheet_count = mask_workbook(filepath, patterns)
+    except FileNotFoundError:
+        result["error"] = f"file not found (it may have been deleted or moved): {filepath}"
+        return result
+    except PermissionError:
+        result["error"] = f"permission denied when trying to read: {filepath}"
+        return result
+    except Exception as e:
+        # A corrupt file, a password-protected workbook, or a file that
+        # isn't really an .xlsx can fail in many different ways inside
+        # openpyxl. Whatever happens, report it clearly — never crash.
+        result["error"] = (
+            f"could not read spreadsheet: {filepath} (it may be corrupt, "
+            f"password-protected, or not a real .xlsx file; details: {e})"
+        )
+        return result
+
+    result["cell_count"] = cell_count
+    result["sheet_count"] = sheet_count
+    result["counts"] = total_counts
+
+    if cell_count == 0:
+        result["empty"] = True
+        return result
+
+    if not check_mode:
+        total_found = sum(total_counts.values())
+
+        if total_found == 0 and output_override is None:
+            result["skipped_write"] = True
+            return result
+
+        output_filepath = output_override or build_output_filepath(filepath)
+        try:
+            write_workbook(output_filepath, workbook)
+        except PermissionError:
+            result["error"] = (
+                f"permission denied when trying to write: {output_filepath} "
+                f"(if it's open in Excel, close it and try again)"
+            )
+            return result
+        except OSError as e:
+            result["error"] = f"could not write file: {output_filepath} ({e})"
+            return result
+        result["output_filepath"] = output_filepath
+
+    return result
+
+
 def process_file(filepath, patterns, check_mode, output_override=None):
     """
     Reads and scans a single file. In check_mode, never writes an output
     file. In normal mode, writes an output file UNLESS nothing was found
     AND no explicit output_override was given.
+
+    .xlsx files are handled by _process_spreadsheet(); .xls files get a
+    clear "not supported" error; everything else is read as plain text.
     """
     result = {
         "filepath": filepath,
+        "kind": "text",
         "error": None,
         "empty": False,
         "line_count": 0,
+        "cell_count": 0,
+        "sheet_count": 0,
         "counts": {label: 0 for label in patterns},
         "output_filepath": None,
         "skipped_write": False,
@@ -372,6 +461,18 @@ def process_file(filepath, patterns, check_mode, output_override=None):
     if not os.path.isfile(filepath):
         result["error"] = f"file not found: {filepath}"
         return result
+
+    extension = _file_extension(filepath)
+
+    if extension in UNSUPPORTED_SPREADSHEET_EXTENSIONS:
+        result["error"] = (
+            f"the old .xls Excel format is not supported: {filepath} "
+            f"(open it in Excel and use File > Save As to save it as .xlsx)"
+        )
+        return result
+
+    if extension in SPREADSHEET_EXTENSIONS:
+        return _process_spreadsheet(filepath, patterns, check_mode, output_override, result)
 
     try:
         lines = read_log_file_lines(filepath)
@@ -421,14 +522,15 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         prog="log-guard",
         description=(
-            "Scan log files (or entire directories) and mask sensitive data "
-            "(emails, phone numbers, API keys, IP addresses, credit cards, "
-            "and custom patterns)."
+            "Scan log files and .xlsx spreadsheets (or entire directories) and "
+            "mask sensitive data (emails, phone numbers, API keys, IP addresses, "
+            "credit cards, and custom patterns)."
         ),
         epilog=(
             "Examples:\n"
             "  log-guard sample.log\n"
             "  log-guard sample.log -o cleaned.log\n"
+            "  log-guard data.xlsx                     # Excel spreadsheet -> data.masked.xlsx\n"
             "  log-guard logs/                        # scans log/txt/csv/json/out/err in logs/, recursively\n"
             "  log-guard logs/ --ext log,txt --no-recursive\n"
             "  log-guard logs/ --ext all               # scan every file, any extension\n"
@@ -444,7 +546,7 @@ def parse_arguments():
     parser.add_argument(
         "filepaths",
         nargs="+",
-        help="Path(s) to log file(s) and/or directories to scan"
+        help="Path(s) to log file(s), .xlsx spreadsheet(s), and/or directories to scan"
     )
     parser.add_argument(
         "-o", "--output",
@@ -599,9 +701,18 @@ def main():
             continue
 
         if not quiet:
-            print(f"Scanned {result['line_count']} lines in {filepath}")
+            if result["kind"] == "spreadsheet":
+                print(
+                    f"Scanned {result['cell_count']} cells across "
+                    f"{result['sheet_count']} sheet(s) in {filepath}"
+                )
+                output_label = "Masked spreadsheet"
+            else:
+                print(f"Scanned {result['line_count']} lines in {filepath}")
+                output_label = "Masked log"
+
             if result["output_filepath"]:
-                print(f"Masked log written to {result['output_filepath']}")
+                print(f"{output_label} written to {result['output_filepath']}")
             elif result["skipped_write"]:
                 print(f"No sensitive data found in {filepath}; masked file not created.")
             print_summary(result["counts"], heading=f"--- Summary for {filepath} ---", verb=verb)
