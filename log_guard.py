@@ -4,6 +4,8 @@ import os
 import json
 import sys
 
+import openpyxl
+
 
 def read_log_file_lines(filepath):
     """
@@ -146,6 +148,83 @@ def mask_log(lines, patterns):
             total_counts[label] += counts[label]
 
     return masked_lines, total_counts, line_count
+
+
+# --- Spreadsheet (.xlsx) support ---
+# .xlsx files are ZIP archives of XML, not plain text, so they can't go
+# through the line-by-line reader above. Instead we open them with
+# openpyxl and run the same mask_line() logic on each cell's text.
+
+
+def _cell_text_for_scanning(cell):
+    """
+    Returns the text that should be scanned for a spreadsheet cell, or
+    None if the cell should be skipped.
+
+    - Text cells are scanned as-is.
+    - Whole numbers (e.g. a phone number typed as 5551234567) are
+      scanned as their digits.
+    - Formulas are skipped: masking text inside a formula could break it.
+    - Dates, decimals, and True/False values are skipped: they can't
+      contain the kinds of data we look for.
+    """
+    value = cell.value
+    if value is None:
+        return None
+    if cell.data_type == "f":
+        return None
+    # bool must be checked before int, because True/False count as ints in Python.
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return None
+
+
+def mask_workbook(filepath, patterns):
+    """
+    Opens an .xlsx file and masks sensitive data in every cell of every
+    sheet (hidden sheets included). Cells are only changed if something
+    was actually found in them.
+
+    Returns a tuple of: (workbook, total_counts, cell_count, sheet_count)
+    where cell_count is the number of non-empty cells looked at.
+    The masked workbook is returned in memory; use write_workbook() to
+    save it.
+    """
+    workbook = openpyxl.load_workbook(filepath)
+    total_counts = {label: 0 for label in patterns}
+    cell_count = 0
+
+    for worksheet in workbook.worksheets:
+        for row in worksheet.iter_rows():
+            for cell in row:
+                if cell.value is None:
+                    continue
+                cell_count += 1
+
+                text = _cell_text_for_scanning(cell)
+                if text is None:
+                    continue
+
+                masked_text, counts = mask_line(text, patterns)
+                if masked_text != text:
+                    cell.value = masked_text
+                for label in total_counts:
+                    total_counts[label] += counts[label]
+
+    return workbook, total_counts, cell_count, len(workbook.worksheets)
+
+
+def write_workbook(filepath, workbook):
+    """
+    Saves an openpyxl workbook to a new .xlsx file.
+    """
+    workbook.save(filepath)
 
 
 def build_output_filepath(input_filepath):

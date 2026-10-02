@@ -7,9 +7,11 @@ build/
 dist/
 
 # Log Guard's own generated test artifacts
-# (regenerate anytime with generate_samples.py / generate_test_logs_dir.py)
+# (regenerate anytime with generate_samples.py / generate_test_logs_dir.py /
+# generate_xlsx_sample.py)
 edge_case_samples/
 test_logs/
+xlsx_samples/
 *.masked.*
 
 # Personal local config — commit .log-guard.json.example instead
