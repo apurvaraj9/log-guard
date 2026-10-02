@@ -41,6 +41,10 @@ classifiers = [
     "Topic :: System :: Logging",
     "Topic :: Utilities",
 ]
+dependencies = [
+    "openpyxl>=3.1",
+    "defusedxml>=0.7",
+]
 
 [project.urls]
 Homepage = "https://github.com/apurvaraj9/log-guard"
