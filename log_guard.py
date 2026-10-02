@@ -62,12 +62,12 @@ DISPLAY_NAMES = {
 }
 
 # Default file extensions scanned when a directory is given and no
-# --ext / config "extensions" override is present. Chosen because
-# these are all genuinely plain-text formats our line-by-line reader
-# can handle correctly (unlike, say, .xlsx, which is a binary ZIP
-# archive under the hood and needs a dedicated reader — not supported
-# yet).
-DEFAULT_EXTENSIONS = ["log", "txt", "csv", "json", "out", "err"]
+# --ext / config "extensions" override is present. The plain-text
+# formats are read line by line; .xlsx is read cell by cell with
+# openpyxl (see SPREADSHEET_EXTENSIONS below). The old .xls format is
+# deliberately NOT included: it isn't supported, and including it would
+# turn every .xls file in a scanned folder into an error.
+DEFAULT_EXTENSIONS = ["log", "txt", "csv", "json", "out", "err", "xlsx"]
 
 # Spreadsheet formats that are read cell-by-cell with openpyxl instead
 # of line-by-line as plain text.
@@ -531,7 +531,7 @@ def parse_arguments():
             "  log-guard sample.log\n"
             "  log-guard sample.log -o cleaned.log\n"
             "  log-guard data.xlsx                     # Excel spreadsheet -> data.masked.xlsx\n"
-            "  log-guard logs/                        # scans log/txt/csv/json/out/err in logs/, recursively\n"
+            "  log-guard logs/                        # scans log/txt/csv/json/out/err/xlsx in logs/, recursively\n"
             "  log-guard logs/ --ext log,txt --no-recursive\n"
             "  log-guard logs/ --ext all               # scan every file, any extension\n"
             "  log-guard sample.log --patterns custom_patterns.json\n"
