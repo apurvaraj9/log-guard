@@ -2,17 +2,17 @@
 
 [![Tests](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml/badge.svg)](https://github.com/apurvaraj9/log-guard/actions/workflows/tests.yml) [![PyPI version](https://img.shields.io/pypi/v/logguard-cli)](https://pypi.org/project/logguard-cli/)
 
-**A local, offline tool that scans server log files and masks sensitive data before you share them for debugging.**
+**A local, offline tool that scans server log files — and Excel spreadsheets — and masks sensitive data before you share them for debugging.**
 
-No uploads. No third-party servers. No enterprise pricing. Your logs never leave your machine.
+No uploads. No third-party servers. No enterprise pricing. Your data never leaves your machine.
 
 ---
 
 ## Why Log Guard?
 
-When you're debugging with a teammate, posting to a forum, or filing a support ticket, you often need to share a log file — but real logs are full of things you *shouldn't* share: customer emails, phone numbers, API keys, IP addresses, credit card numbers.
+When you're debugging with a teammate, posting to a forum, or filing a support ticket, you often need to share a log file or a spreadsheet export — but real data is full of things you *shouldn't* share: customer emails, phone numbers, API keys, IP addresses, credit card numbers.
 
-- **Online masking tools** require uploading your private logs to a third-party server — a privacy risk in itself.
+- **Online masking tools** require uploading your private data to a third-party server — a privacy risk in itself.
 - **Enterprise security tools** solve this, but are expensive, complex, and overkill for an individual developer or small team.
 
 **Log Guard** runs 100% locally, does one job well, and stays simple.
@@ -20,14 +20,15 @@ When you're debugging with a teammate, posting to a forum, or filing a support t
 ## Features
 
 - 🔍 **Detects and masks:** emails, phone numbers, API keys (Stripe/AWS/GitHub formats + a generic long-token fallback), IP addresses, and credit card numbers (Visa/Mastercard/Amex/Discover)
-- 📁 **Scans whole directories**, recursively by default — point it at a `logs/` folder and it finds everything inside
-- 🧩 **Custom patterns** via a simple JSON file — add your own detection rules with no code changes
+- 📗 **Excel spreadsheet support** — scans every cell of every sheet in `.xlsx` files (hidden sheets included) and writes a masked copy you can open in Excel
+- 📁 **Scans whole directories**, recursively by default — point it at a `logs/` folder and it finds everything inside, spreadsheets included
+- 🧩 **Custom patterns** via a simple JSON file — add your own detection rules with no code changes (they apply to spreadsheets too)
 - ⚙️ **Config file support** (`.log-guard.json`) — set project-level defaults for extensions, recursion, custom patterns, and quiet mode; CLI flags always override it
 - 🚦 **CI / pre-commit mode** (`--check`) — scans without writing files and exits with status code `1` if secrets are found, so it can block a commit or fail a build. Ships with a ready-to-use `.pre-commit-hooks.yaml`
-- 📄 **Non-destructive** — writes a new `*.masked.log` file (or a path you choose with `-o`); your original is never touched, and a clean file with nothing to mask doesn't get a redundant copy
+- 📄 **Non-destructive** — writes a new `*.masked.log` / `*.masked.xlsx` file (or a path you choose with `-o`); your original is never touched, and a clean file with nothing to mask doesn't get a redundant copy
 - 📊 **Summary report** — see exactly how many of each type were found
-- 🧪 **Fully tested** — 50+ automated tests covering detection, masking, directory scanning, config parsing, and a wide range of edge cases, run automatically on every push via GitHub Actions across Python 3.9–3.12
-- 💻 **Handles edge cases** — empty files, huge files (streamed line-by-line), unusual encodings, mixed line endings, and directories with zero matching files
+- 🧪 **Fully tested** — 65+ automated tests covering detection, masking, spreadsheets, directory scanning, config parsing, and a wide range of edge cases, run automatically on every push via GitHub Actions across Python 3.9–3.12
+- 💻 **Handles edge cases** — empty files, huge log files (streamed line-by-line), unusual encodings, mixed line endings, corrupt or password-protected spreadsheets, and directories with zero matching files
 - 🚫 **Smart defaults for directories** — automatically skips `.git`, `node_modules`, `venv`, `.venv`, and `__pycache__` while recursing (use `--ext all` to scan every file if you really want to)
 - ⚡ **Zero network calls, ever**
 
@@ -38,6 +39,8 @@ pip install logguard-cli
 ```
 
 That's it — this installs the `log-guard` command. (The package is named `logguard-cli` on PyPI because the name `log-guard` was already taken, but the command you run is still `log-guard`.)
+
+It also automatically installs two small libraries used for `.xlsx` support: `openpyxl` (reads and writes spreadsheets) and `defusedxml` (protects against maliciously crafted files). Both work fully offline.
 
 Requires Python 3.9 or newer.
 
@@ -63,13 +66,28 @@ log-guard your.log
 
 Creates `your.masked.log` alongside the original (unless nothing was found — then no output file is created, to avoid clutter).
 
+**Scan an Excel spreadsheet (`.xlsx`):**
+
+```bash
+log-guard data.xlsx
+```
+
+```
+Scanned 29 cells across 4 sheet(s) in data.xlsx
+Masked spreadsheet written to data.masked.xlsx
+```
+
+Creates `data.masked.xlsx` — a real spreadsheet you can open in Excel. Every cell on every sheet is checked, including hidden sheets. Text cells and whole numbers (like a phone number typed as `5551234567`) are scanned; formulas, dates, and decimals are left untouched. `--check`, `--quiet`, `-o`, custom patterns, and the config file all work exactly as they do for text files.
+
+Old `.xls` files (Excel 97–2003) aren't supported — open them in Excel and use **File > Save As** to save them as `.xlsx` first.
+
 **Scan an entire directory (recursive by default):**
 
 ```bash
 log-guard logs/
 ```
 
-By default this scans `.log`, `.txt`, `.csv`, `.json`, `.out`, and `.err` files, skipping `.git`/`node_modules`/`venv`/`__pycache__` automatically.
+By default this scans `.log`, `.txt`, `.csv`, `.json`, `.out`, `.err`, and `.xlsx` files, skipping `.git`/`node_modules`/`venv`/`__pycache__` automatically.
 
 ```bash
 log-guard logs/ --ext log,txt --no-recursive   # only .log/.txt, top level only
@@ -90,7 +108,7 @@ log-guard your.log -o cleaned.log
 log-guard logs/*.log --check
 ```
 
-Add `--quiet` for a condensed summary suited to CI logs. To use Log Guard as an actual [pre-commit](https://pre-commit.com) hook in any repo:
+Add `--quiet` for a condensed summary suited to CI logs. To use Log Guard as an actual [pre-commit](https://pre-commit.com) hook in any repo (it checks staged `.log` and `.xlsx` files):
 
 ```yaml
 repos:
@@ -154,14 +172,16 @@ pytest
 ```
 log-guard/
 ├── .github/workflows/tests.yml # GitHub Actions: runs the test suite on every push
-├── log_guard.py               # Core tool: detection, masking, CLI, config, directory scanning
+├── log_guard.py               # Core tool: detection, masking, spreadsheets, CLI, config, directory scanning
 ├── test_log_guard.py          # Automated test suite (pytest)
-├── pyproject.toml             # Packaging config (PyPI metadata + the `log-guard` command)
+├── pyproject.toml             # Packaging config (PyPI metadata, dependencies + the `log-guard` command)
 ├── .pre-commit-hooks.yaml     # Lets others use Log Guard as a pre-commit hook
 ├── .log-guard.json.example    # Example project config file
 ├── sample.log                 # Example log file for testing
 ├── generate_samples.py        # Generates edge-case sample files for manual testing
 ├── generate_test_logs_dir.py  # Generates a sample directory tree for directory-scanning tests
+├── generate_xlsx_sample.py    # Generates a sample .xlsx workbook (and can print any .xlsx file's contents)
+├── RELEASING.md               # Step-by-step checklist for publishing a new version
 └── README.md
 ```
 
@@ -169,12 +189,15 @@ log-guard/
 
 - Detection is regex-based, so like any pattern-matching approach it can occasionally miss unusual formats (false negatives) or flag something that isn't actually sensitive (false positives) — especially the generic long-token API key fallback, which can flag any long run of random-looking characters.
 - Currently focused on common US-style phone number and card formats.
-- **Only plain-text files are read correctly.** Binary formats — notably `.xlsx`/`.xls` Excel spreadsheets — are not yet supported; pointing Log Guard at one won't crash, but it also won't reliably find anything inside, since it isn't plain text under the hood. Proper spreadsheet support (reading actual cell contents) is a planned future feature.
+- **Supported file types:** plain-text files and `.xlsx` spreadsheets. Old `.xls` files are not supported (re-save them as `.xlsx`), and other binary formats such as PDF or Word documents are not read.
+- **Spreadsheet scanning covers cell values only.** Formulas are deliberately left untouched (masking text inside a formula could break it), and cell comments, headers/footers, sheet names, and text inside charts or images are not scanned.
+- **Masked spreadsheets may lose some extras.** The masked copy keeps every sheet, all cell values, and basic formatting, but charts, images, and some advanced Excel features may not survive — a limitation of the `openpyxl` library used to read and write them. Your original file is never changed.
+- **Spreadsheets are loaded into memory in full**, so very large workbooks need correspondingly more RAM. (Text logs are streamed line by line and don't have this limit.)
 - This tool reduces the risk of accidentally sharing sensitive data, but it isn't a substitute for careful review of anything genuinely high-stakes before sharing.
 
 ## Roadmap
 
-- [ ] `.xlsx`/`.xls` support (via `openpyxl`)
+- [x] `.xlsx` spreadsheet support (via `openpyxl`)
 - [x] PyPI packaging (`pip install logguard-cli`)
 
 ## License

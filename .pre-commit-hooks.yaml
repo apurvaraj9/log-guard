@@ -1,6 +1,6 @@
 - id: log-guard
   name: Log Guard (secret scanner for logs)
-  description: Scans staged .log files for leaked emails, phone numbers, API keys, IP addresses, and credit card numbers. Blocks the commit if any are found.
+  description: Scans staged .log and .xlsx files for leaked emails, phone numbers, API keys, IP addresses, and credit card numbers. Blocks the commit if any are found.
   entry: log-guard --check
   language: python
-  files: \.log$
+  files: \.(log|xlsx)$

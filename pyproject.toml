@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "logguard-cli"
 version = "0.1.0"
-description = "A 100% local, offline CLI tool that scans log files and masks sensitive data (emails, phone numbers, API keys, IPs, credit cards) before you share them."
+description = "A 100% local, offline CLI tool that scans log files and Excel (.xlsx) spreadsheets and masks sensitive data (emails, phone numbers, API keys, IPs, credit cards) before you share them."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
@@ -24,6 +24,8 @@ keywords = [
     "sensitive-data",
     "cli",
     "pre-commit",
+    "excel",
+    "xlsx",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
