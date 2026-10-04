@@ -113,7 +113,7 @@ Add `--quiet` for a condensed summary suited to CI logs. To use Log Guard as an 
 ```yaml
 repos:
   - repo: https://github.com/apurvaraj9/log-guard
-    rev: v0.1.0
+    rev: v0.2.0
     hooks:
       - id: log-guard
 ```
